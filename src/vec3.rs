@@ -36,11 +36,12 @@ impl Vec3 {
   }
 }
 
-impl Add for Vec3 {
-  type Output = Self;
 
-  fn add(self, other: Self) -> Self {
-    Self {
+impl Add for &Vec3 {
+  type Output = Vec3;
+
+  fn add(self, other: Self) -> Self::Output {
+    Vec3 {
       x: self.x + other.x,
       y: self.y + other.y,
       z: self.z + other.z,
@@ -48,39 +49,47 @@ impl Add for Vec3 {
   }
 }
 
-impl Add<&Vec3> for &Vec3 {
+impl Add for Vec3 {
+  type Output = Self;
+
+  fn add(self, other: Self) -> Self {
+    &self + &other
+  }
+}
+
+impl Add<&Vec3> for Vec3 {
   type Output = Vec3;
 
   fn add(self, other: &Vec3) -> Self::Output {
+    &self + other
+  }
+}
+
+impl Sub for &Vec3 {
+  type Output = Vec3;
+
+  fn sub(self, other: Self) -> Self::Output {
     Vec3 {
-      x: self.x + other.x,
-      y: self.y + other.y,
-      z: self.z + other.z,
+      x: self.x - other.x,
+      y: self.y - other.y,
+      z: self.z - other.z,
     }
   }
 }
 
 impl Sub for Vec3 {
-  type Output = Self;
+  type Output = Vec3;
 
-  fn sub(self, other: Self) -> Self {
-    Self {
-      x: self.x - other.x,
-      y: self.y - other.y,
-      z: self.z - other.z,
-    }
+  fn sub(self, other: Self) -> Self::Output {
+    &self - &other
   }
 }
 
-impl Sub<&Vec3> for &Vec3 {
+impl Sub<&Vec3> for Vec3 {
   type Output = Vec3;
 
   fn sub(self, other: &Vec3) -> Self::Output {
-    Vec3 {
-      x: self.x - other.x,
-      y: self.y - other.y,
-      z: self.z - other.z,
-    }
+    &self - other
   }
 }
 
@@ -148,4 +157,4 @@ impl Div<f64> for &Vec3 {
   }
 }
 
-pub type Point = Vec3;
+pub type Point3 = Vec3;
