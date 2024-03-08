@@ -1,5 +1,6 @@
 use std::ops::{Add, Div, Mul, Neg, Sub};
 
+#[derive(Copy, Clone)]
 pub struct Vec3 {
   pub x: f64,
   pub y: f64,
@@ -15,7 +16,7 @@ impl Vec3 {
     self.length_squared().sqrt()
   }
 
-  fn length_squared(&self) -> f64 {
+  pub fn length_squared(&self) -> f64 {
     self.x * self.x + self.y * self.y + self.z * self.z
   }
 

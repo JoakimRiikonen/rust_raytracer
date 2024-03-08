@@ -1,6 +1,6 @@
 use std::fs;
 
-use rust_ray_tracer::{color::Color, ray::Ray, vec3::{Point3, Vec3}};
+use rust_ray_tracer::{color::Color, common::Common, hittable::Hittable, hittable_list::HittableList, interval::Interval, ray::Ray, sphere::Sphere, vec3::{Point3, Vec3}};
 
 
 fn main() {
@@ -13,6 +13,20 @@ fn main() {
     // Calculate the image height, and ensure it't at least 1
     let image_height = (image_width as f64 / aspect_ratio) as i64;
     let image_height = if image_height < 1 { 1 } else { image_height };
+
+    // World
+
+    let sphere1 = Box::new(Sphere::new(
+        Point3::new(0.0,0.0,-1.0),
+        0.5));
+    let sphere2 = Box::new(Sphere::new(
+        Point3::new(0.0,-100.5,-1.0),
+        100.0
+    ));
+
+    let world = HittableList {
+        objects: vec![sphere1, sphere2]
+    };
 
     // Camera
 
@@ -46,7 +60,7 @@ fn main() {
 
             let r = Ray::new(&camera_center, &ray_direction);
 
-            let pixel_color = ray_color(&r);
+            let pixel_color = ray_color(&r, Box::new(&world));
 
             let row = format!("{}\n", pixel_color.to_color_string());
 
@@ -58,22 +72,14 @@ fn main() {
     _ = fs::write(filename, output);
 }
 
-fn ray_color(ray: &Ray) -> Color {
-    if hit_sphere(Point3::new(0.0, 0.0, -1.0), 0.5, ray) {
-        return Color::new(1.0, 0.0, 0.0);
+fn ray_color<'a>(ray: &Ray, world: Box<dyn Hittable + 'a>) -> Color {
+    let interval = Interval::new_from_range(0.0, Common::INFINITY);
+    let (hit, rec) = world.hit(ray, &interval);
+    if hit {
+        return rec.unwrap().normal + Color::new(1.0, 1.0, 1.0) * 0.5;
     }
 
     let unit_direction = ray.direction.unit_vector();
     let a = 0.5 * (unit_direction.y + 1.0);
     Color::new(1.0, 1.0, 1.0) * (1.0 - a) + Color::new(0.5, 0.7, 1.0) * a
-}
-
-fn hit_sphere(center: Point3, radius: f64, r: &Ray) -> bool {
-    let oc = r.origin - &center;
-    let a = r.direction.dot(&r.direction);
-    let b = oc.dot(&r.direction) * 2.0;
-    let c = oc.dot(&oc) - radius*radius;
-    let discriminant = b*b - 4.0*a*c;
-
-    return discriminant >= 0.0;
 }
