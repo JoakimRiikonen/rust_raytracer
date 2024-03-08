@@ -113,8 +113,13 @@ impl Camera<'_> {
     let (hit, rec) = world.hit(ray, &interval);
     if hit {
       let uw_rec = rec.unwrap();
-      let direction = uw_rec.normal + Vec3::random_unit_vector();
-      return Camera::ray_color(&Ray::new(uw_rec.p, direction), depth-1, world) * 0.5;
+      let (scatter, attenuation, ray_scattered) = uw_rec.material.scatter(&ray, &uw_rec);
+      if scatter {
+        let color = Camera::ray_color(&ray_scattered, depth-1, world);
+        return attenuation * color;
+      } 
+
+      return Color::new(0.0, 0.0, 0.0);
     }
 
     let unit_direction = ray.direction.unit_vector();

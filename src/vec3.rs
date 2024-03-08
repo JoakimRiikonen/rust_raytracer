@@ -38,6 +38,11 @@ impl Vec3 {
     self.x * self.x + self.y * self.y + self.z * self.z
   }
 
+  pub fn near_zero(&self) -> bool {
+    let s = 1e-8;
+    return self.x.abs() < s && self.y.abs() < s && self.z.abs() < s;
+  }
+
   pub fn dot(&self, vec: &Vec3) -> f64 {
     self.x * vec.x + self.y * vec.y + self.z * vec.z
   }
@@ -73,6 +78,10 @@ impl Vec3 {
       return on_unit_sphere;
     }
     return -on_unit_sphere;
+  }
+
+  pub fn reflect(&self, n: &Vec3) -> Vec3 {
+    return self - &(n * self.dot(n) * 2.0);
   }
 }
 
@@ -177,6 +186,18 @@ impl Mul<f64> for &Vec3 {
       x: self.x * rhs,
       y: self.y * rhs,
       z: self.z * rhs,
+    }
+  }
+}
+
+impl Mul<Vec3> for Vec3 {
+  type Output = Vec3;
+
+  fn mul(self, other: Vec3) -> Self::Output {
+    Vec3 {
+      x: self.x * other.x,
+      y: self.y * other.y,
+      z: self.z * other.z,
     }
   }
 }
