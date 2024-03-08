@@ -21,9 +21,10 @@ fn main() {
     let aspect_ratio = 16.0 / 9.0;
     let image_width: i64 = 400;
     let samples_per_pixel = 100;
+    let max_depth = 10;
     let filename = "testimg.ppm";
     
-    let camera = Camera::new(aspect_ratio,
-        image_width, samples_per_pixel, filename);
+    let camera = Camera::new(aspect_ratio, image_width,
+        samples_per_pixel, max_depth, filename);
     camera.render(Box::new(&world));
 }

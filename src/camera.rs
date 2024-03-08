@@ -6,6 +6,7 @@ pub struct Camera<'a> {
   aspect_ratio: f64,
   image_width: i64,
   samples_per_pixel: i64,
+  max_depth: i64,
   filename: &'a str,
 }
 
@@ -18,11 +19,13 @@ struct CameraComputedSettings {
 }
 
 impl Camera<'_> {
-  pub fn new<'a>(aspect_ratio: f64, image_width: i64, samples_per_pixel: i64, filename: &'a str) -> Camera {
+  pub fn new<'a>(aspect_ratio: f64, image_width: i64, samples_per_pixel: i64,
+    max_depth: i64, filename: &'a str) -> Camera {
     Camera {
       aspect_ratio,
       image_width,
       samples_per_pixel,
+      max_depth,
       filename,
     }
   }
@@ -38,7 +41,7 @@ impl Camera<'_> {
             let mut pixel_color = Color::new(0.0, 0.0, 0.0);
             for _ in 0..self.samples_per_pixel {
               let r = Camera::get_ray(i, j, &settings);
-              pixel_color = pixel_color + Camera::ray_color(&r, &world);
+              pixel_color = pixel_color + Camera::ray_color(&r, self.max_depth,&world);
             }
 
             let row = format!("{}\n", pixel_color.to_color_string(self.samples_per_pixel));
@@ -101,15 +104,21 @@ impl Camera<'_> {
     return (settings.pixel_delta_u * px) + (settings.pixel_delta_v * py);
   }
 
-  fn ray_color<'a>(ray: &Ray, world: &Box<dyn Hittable + 'a>) -> Color {
-      let interval = Interval::new_from_range(0.0, Common::INFINITY);
-      let (hit, rec) = world.hit(ray, &interval);
-      if hit {
-          return rec.unwrap().normal + Color::new(1.0, 1.0, 1.0) * 0.5;
-      }
+  fn ray_color<'a>(ray: &Ray, depth: i64, world: &Box<dyn Hittable + 'a>) -> Color {
+    if depth <= 0 {
+      return Color::new(0.0, 0.0, 0.0);
+    }
 
-      let unit_direction = ray.direction.unit_vector();
-      let a = 0.5 * (unit_direction.y + 1.0);
-      Color::new(1.0, 1.0, 1.0) * (1.0 - a) + Color::new(0.5, 0.7, 1.0) * a
+    let interval = Interval::new_from_range(0.001, Common::INFINITY);
+    let (hit, rec) = world.hit(ray, &interval);
+    if hit {
+      let uw_rec = rec.unwrap();
+      let direction = uw_rec.normal + Vec3::random_unit_vector();
+      return Camera::ray_color(&Ray::new(uw_rec.p, direction), depth-1, world) * 0.5;
+    }
+
+    let unit_direction = ray.direction.unit_vector();
+    let a = 0.5 * (unit_direction.y + 1.0);
+    Color::new(1.0, 1.0, 1.0) * (1.0 - a) + Color::new(0.5, 0.7, 1.0) * a
   }
 }

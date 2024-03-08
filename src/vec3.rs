@@ -1,5 +1,7 @@
 use std::ops::{Add, Div, Mul, Neg, Sub};
 
+use crate::common::Common;
+
 #[derive(Copy, Clone)]
 pub struct Vec3 {
   pub x: f64,
@@ -10,6 +12,22 @@ pub struct Vec3 {
 impl Vec3 {
   pub fn new(x: f64, y: f64, z: f64) -> Vec3 {
     Vec3 { x, y, z }
+  }
+
+  pub fn random() -> Vec3 {
+    Vec3 {
+      x: Common::random_float(),
+      y: Common::random_float(),
+      z: Common::random_float(),
+    }
+  }
+
+  pub fn random_in_range(min: f64, max: f64) -> Vec3 {
+    Vec3 {
+      x: Common::random_float_in_range(min, max),
+      y: Common::random_float_in_range(min, max),
+      z: Common::random_float_in_range(min, max),
+    }
   }
 
   pub fn length(&self) -> f64 {
@@ -34,6 +52,27 @@ impl Vec3 {
 
   pub fn unit_vector(&self) -> Vec3 {
     self / self.length()
+  }
+  
+  pub fn random_in_unit_sphere() -> Vec3 {
+    loop {
+      let p = Vec3::random_in_range(-1.0, 1.0);
+      if p.length_squared() < 1.0 {
+        return p;
+      }
+    }
+  }
+
+  pub fn random_unit_vector() -> Vec3 {
+    return Vec3::random_in_unit_sphere().unit_vector();
+  }
+
+  pub fn random_on_hemisphere(normal: &Vec3) -> Vec3 {
+    let on_unit_sphere = Vec3::random_unit_vector();
+    if on_unit_sphere.dot(normal) > 0.0 {
+      return on_unit_sphere;
+    }
+    return -on_unit_sphere;
   }
 }
 
