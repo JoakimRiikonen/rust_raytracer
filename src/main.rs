@@ -1,4 +1,4 @@
-use rust_ray_tracer::{camera::Camera, color::Color, hittable_list::HittableList, material::{Lambertian, Metal}, sphere::Sphere, vec3::Point3};
+use rust_ray_tracer::{camera::Camera, color::Color, hittable_list::HittableList, material::{Lambertian, Metal}, sphere::Sphere, vec3::{Point3, Vec3}};
 
 
 fn main() {
@@ -32,9 +32,14 @@ fn main() {
 	let image_width: i64 = 400;
 	let samples_per_pixel = 100;
 	let max_depth = 10;
+	let vfov = 90.0;
+	let look_from = Point3::new(-2.0, 2.0, 1.0);
+	let look_at = Point3::new(0.0, 0.0, -1.0);
+	let vup = Vec3::new(0.0, 1.0, 0.0);
 	let filename = "testimg.ppm";
 	
 	let camera = Camera::new(aspect_ratio, image_width,
-		samples_per_pixel, max_depth,  filename);
+		samples_per_pixel, max_depth, vfov, look_from,
+		look_at, vup, filename);
 	camera.render(Box::new(&world));
 }

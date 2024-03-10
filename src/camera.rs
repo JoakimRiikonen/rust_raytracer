@@ -7,6 +7,10 @@ pub struct Camera<'a> {
   image_width: i64,
   samples_per_pixel: i64,
   max_depth: i64,
+  vfov: f64,
+  look_from: Point3,
+  look_at: Point3,
+  vup: Vec3,
   filename: &'a str,
 }
 
@@ -20,12 +24,17 @@ struct CameraComputedSettings {
 
 impl Camera<'_> {
   pub fn new<'a>(aspect_ratio: f64, image_width: i64, samples_per_pixel: i64,
-    max_depth: i64, filename: &'a str) -> Camera {
+    max_depth: i64, vfov: f64, look_from: Point3,
+    look_at: Point3, vup: Vec3, filename: &'a str) -> Camera {
     Camera {
       aspect_ratio,
       image_width,
       samples_per_pixel,
       max_depth,
+      vfov,
+      look_from,
+      look_at,
+      vup,
       filename,
     }
   }
@@ -59,14 +68,21 @@ impl Camera<'_> {
     let image_height = (self.image_width as f64 / self.aspect_ratio) as i64;
     let image_height = if image_height < 1 { 1 } else { image_height };
 
-    let focal_length = 1.0;
-    let viewport_height = 2.0;
+    let center = self.look_from;
+
+    let focal_length = (self.look_from - self.look_at).length();
+    let theta = Common::degrees_to_radians(self.vfov);
+    let h = (theta / 2.0).tan();
+    let viewport_height = 2.0 * h * focal_length;
     let viewport_width = viewport_height * (self.image_width as f64 / image_height as f64);
-    let center = Point3::new(0.0, 0.0, 0.0);
+
+    let w = (self.look_from - self.look_at).unit_vector();
+    let u = self.vup.cross(&w).unit_vector();
+    let v = w.cross(&u);
 
     // Calculate vectors across the horizontal and down the vertical viewport edges
-    let viewport_u = Vec3::new(viewport_width, 0.0, 0.0);
-    let viewport_v = Vec3::new(0.0, -viewport_height, 0.0);
+    let viewport_u = u  * viewport_width;
+    let viewport_v = -v * viewport_height;
 
     // Calculate the horizontal and vertical delta vectors from pixel to pixel
     let pixel_delta_u = &viewport_u / self.image_width as f64;
@@ -74,7 +90,7 @@ impl Camera<'_> {
 
     // Calculate location of upper-left pixel
     let viewport_upper_left = &center
-        - &Vec3::new(0.0, 0.0, focal_length)
+        - &(w * focal_length)
         - &viewport_u / 2.0
         - &viewport_v / 2.0;
     let pixel00_loc = viewport_upper_left + (&pixel_delta_u + &pixel_delta_v) * 0.5;
