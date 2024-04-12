@@ -11,6 +11,8 @@ pub struct Camera<'a> {
   look_from: Point3,
   look_at: Point3,
   vup: Vec3,
+  defocus_angle: f64,
+  focus_dist: f64,
   filename: &'a str,
 }
 
@@ -20,12 +22,14 @@ struct CameraComputedSettings {
   pixel00_loc: Point3,
   pixel_delta_u: Vec3,
   pixel_delta_v: Vec3,
+  defocus_dist_u: Vec3,
+  defocus_dist_v: Vec3,
 }
 
 impl Camera<'_> {
   pub fn new<'a>(aspect_ratio: f64, image_width: i64, samples_per_pixel: i64,
     max_depth: i64, vfov: f64, look_from: Point3,
-    look_at: Point3, vup: Vec3, filename: &'a str) -> Camera {
+    look_at: Point3, vup: Vec3, defocus_angle: f64, focus_dist: f64,  filename: &'a str) -> Camera {
     Camera {
       aspect_ratio,
       image_width,
@@ -34,6 +38,8 @@ impl Camera<'_> {
       vfov,
       look_from,
       look_at,
+      defocus_angle,
+      focus_dist,
       vup,
       filename,
     }
@@ -49,7 +55,7 @@ impl Camera<'_> {
         for i in 0..self.image_width {
             let mut pixel_color = Color::new(0.0, 0.0, 0.0);
             for _ in 0..self.samples_per_pixel {
-              let r = Camera::get_ray(i, j, &settings);
+              let r = Camera::get_ray(i, j, &settings, self.defocus_angle);
               pixel_color = pixel_color + Camera::ray_color(&r, self.max_depth,&world);
             }
 
@@ -70,10 +76,9 @@ impl Camera<'_> {
 
     let center = self.look_from;
 
-    let focal_length = (self.look_from - self.look_at).length();
     let theta = Common::degrees_to_radians(self.vfov);
     let h = (theta / 2.0).tan();
-    let viewport_height = 2.0 * h * focal_length;
+    let viewport_height = 2.0 * h * self.focus_dist;
     let viewport_width = viewport_height * (self.image_width as f64 / image_height as f64);
 
     let w = (self.look_from - self.look_at).unit_vector();
@@ -90,10 +95,14 @@ impl Camera<'_> {
 
     // Calculate location of upper-left pixel
     let viewport_upper_left = &center
-        - &(w * focal_length)
+        - &(w * self.focus_dist)
         - &viewport_u / 2.0
         - &viewport_v / 2.0;
     let pixel00_loc = viewport_upper_left + (&pixel_delta_u + &pixel_delta_v) * 0.5;
+
+    let defocus_radius = self.focus_dist * Common::degrees_to_radians(self.defocus_angle / 2.0).tan();
+    let defocus_dist_u = u * defocus_radius;
+    let defocus_dist_v = v * defocus_radius;
 
     CameraComputedSettings {
       image_height,
@@ -101,14 +110,16 @@ impl Camera<'_> {
       pixel00_loc,
       pixel_delta_u,
       pixel_delta_v,
+      defocus_dist_u,
+      defocus_dist_v
     }
   }
 
-  fn get_ray(i: i64, j: i64, settings: &CameraComputedSettings) -> Ray {
+  fn get_ray(i: i64, j: i64, settings: &CameraComputedSettings, defocus_angle: f64) -> Ray {
     let pixel_center = &settings.pixel00_loc + &(&settings.pixel_delta_u * i as f64) + (&settings.pixel_delta_v * j as f64);
     let pixel_sample = pixel_center + Camera::pixel_sample_square(&settings);
     
-    let ray_origin = settings.center;
+    let ray_origin = if defocus_angle < 0.0 { settings.center } else { Camera::defocus_disk_sample(&settings) };
     let ray_direction = pixel_sample - ray_origin;
 
     return Ray::new(ray_origin, ray_direction);
@@ -118,6 +129,11 @@ impl Camera<'_> {
     let px = -0.5 + Common::random_float();
     let py = -0.5 + Common::random_float();
     return (settings.pixel_delta_u * px) + (settings.pixel_delta_v * py);
+  }
+
+  fn defocus_disk_sample(settings: &CameraComputedSettings) -> Point3 {
+    let p = Vec3::random_in_unit_disk();
+    return settings.center + (settings.defocus_dist_u * p.x) + (settings.defocus_dist_v * p.y);
   }
 
   fn ray_color<'a>(ray: &Ray, depth: i64, world: &Box<dyn Hittable + 'a>) -> Color {

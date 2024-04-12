@@ -40,10 +40,12 @@ fn main() {
 	let look_from = Point3::new(0.0, 0.0, 0.0);
 	let look_at = Point3::new(0.0, 0.0, -1.0);
 	let vup = Vec3::new(0.0, 1.0, 0.0);
+	let defocus_angle = 10.0;
+	let focus_dist = 3.4;
 	let filename = "testimg.ppm";
 	
 	let camera = Camera::new(aspect_ratio, image_width,
 		samples_per_pixel, max_depth, vfov, look_from,
-		look_at, vup, filename);
+		look_at, vup, defocus_angle, focus_dist, filename);
 	camera.render(Box::new(&world));
 }

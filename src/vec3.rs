@@ -80,6 +80,15 @@ impl Vec3 {
     return -on_unit_sphere;
   }
 
+  pub fn random_in_unit_disk() -> Vec3 {
+    loop {
+      let p = Vec3::new(Common::random_float_in_range(-1.0, 1.0), Common::random_float_in_range(-1.0, 1.0), 0.0);
+      if p.length_squared() < 1.0 {
+        return p;
+      }
+    }
+  }
+
   pub fn reflect(&self, n: &Vec3) -> Vec3 {
     return self - &(n * self.dot(n) * 2.0);
   }
